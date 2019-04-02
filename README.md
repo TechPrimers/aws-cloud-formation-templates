@@ -4,7 +4,7 @@
 - [EC2 SecurityGroup and S3](#ec2-securitygroup-and-s3)
 
 # EC2 SecurityGroup and S3
-- [CloudFormation Template](/templates/aws-cf-ec2-s3.json)
+- [CloudFormation JSON Template](/templates/aws-cf-ec2-s3.json)
 - Design
 <img src="/templates/aws-cf-ec2-s3.png" width="50%"/>
 - Architecture
