@@ -1,0 +1,215 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Parameters": {
+    "KeyName": {
+      "Description": "Name of an existing EC2 KeyPair to enable SSH access to the instance",
+      "Type": "AWS::EC2::KeyPair::KeyName",
+      "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+    },
+    "InstanceType": {
+      "Description": "WebServer EC2 instance type",
+      "Type": "String",
+      "Default": "t2.nano",
+      "AllowedValues": [
+        "t1.micro",
+        "t2.nano"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type."
+    },
+    "SSHLocation": {
+      "Description": "The IP address range that can be used to SSH to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    }
+  },
+  "Mappings": {
+    "AWSInstanceType2Arch": {
+      "t1.micro": {
+        "Arch": "HVM64"
+      },
+      "t2.nano": {
+        "Arch": "HVM64"
+      }
+    },
+    "AWSRegionArch2AMI": {
+      "us-east-1": {
+        "HVM64": "ami-0080e4c5bc078760e",
+        "HVMG2": "ami-0aeb704d503081ea6"
+      },
+      "us-west-2": {
+        "HVM64": "ami-01e24be29428c15b2",
+        "HVMG2": "ami-0fe84a5b4563d8f27"
+      },
+      "us-west-1": {
+        "HVM64": "ami-0ec6517f6edbf8044",
+        "HVMG2": "ami-0a7fc72dc0e51aa77"
+      },
+      "eu-west-1": {
+        "HVM64": "ami-08935252a36e25f85",
+        "HVMG2": "ami-0d5299b1c6112c3c7"
+      },
+      "eu-west-2": {
+        "HVM64": "ami-01419b804382064e4",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "eu-west-3": {
+        "HVM64": "ami-0dd7e7ed60da8fb83",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "eu-central-1": {
+        "HVM64": "ami-0cfbf4f6db41068ac",
+        "HVMG2": "ami-0aa1822e3eb913a11"
+      },
+      "eu-north-1": {
+        "HVM64": "ami-86fe70f8",
+        "HVMG2": "ami-32d55b4c"
+      },
+      "ap-northeast-1": {
+        "HVM64": "ami-00a5245b4816c38e6",
+        "HVMG2": "ami-09d0e0e099ecabba2"
+      },
+      "ap-northeast-2": {
+        "HVM64": "ami-00dc207f8ba6dc919",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ap-northeast-3": {
+        "HVM64": "ami-0b65f69a5c11f3522",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ap-southeast-1": {
+        "HVM64": "ami-05b3bcf7f311194b3",
+        "HVMG2": "ami-0e46ce0d6a87dc979"
+      },
+      "ap-southeast-2": {
+        "HVM64": "ami-02fd0b06f06d93dfc",
+        "HVMG2": "ami-0c0ab057a101d8ff2"
+      },
+      "ap-south-1": {
+        "HVM64": "ami-0ad42f4f66f6c1cc9",
+        "HVMG2": "ami-0244c1d42815af84a"
+      },
+      "us-east-2": {
+        "HVM64": "ami-0cd3dfa4e37921605",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "ca-central-1": {
+        "HVM64": "ami-07423fb63ea0a0930",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "sa-east-1": {
+        "HVM64": "ami-05145e0b28ad8e0b2",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "cn-north-1": {
+        "HVM64": "ami-053617c9d818c1189",
+        "HVMG2": "NOT_SUPPORTED"
+      },
+      "cn-northwest-1": {
+        "HVM64": "ami-0f7937761741dc640",
+        "HVMG2": "NOT_SUPPORTED"
+      }
+    }
+  },
+  "Resources": {
+    "EC2Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "SecurityGroups": [
+          {
+            "Ref": "InstanceSecurityGroup"
+          }
+        ],
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegionArch2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            {
+              "Fn::FindInMap": [
+                "AWSInstanceType2Arch",
+                {
+                  "Ref": "InstanceType"
+                },
+                "Arch"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Enable SSH access via port 22",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "22",
+            "ToPort": "22",
+            "CidrIp": {
+              "Ref": "SSHLocation"
+            }
+          }
+        ]
+      }
+    },
+    "S3Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {},
+      "Metadata": {
+        "AWS::CloudFormation::Designer": {
+          "id": "578de650-9ae7-4a2d-8caa-6ebc5990a94b"
+        }
+      },
+      "DependsOn": [
+        "EC2Instance"
+      ]
+    }
+  },
+  "Outputs": {
+    "InstanceId": {
+      "Description": "InstanceId of the newly created EC2 instance",
+      "Value": {
+        "Ref": "EC2Instance"
+      }
+    },
+    "AZ": {
+      "Description": "Availability Zone of the newly created EC2 instance",
+      "Value": {
+        "Fn::GetAtt": [
+          "EC2Instance",
+          "AvailabilityZone"
+        ]
+      }
+    },
+    "PublicDNS": {
+      "Description": "Public DNSName of the newly created EC2 instance",
+      "Value": {
+        "Fn::GetAtt": [
+          "EC2Instance",
+          "PublicDnsName"
+        ]
+      }
+    },
+    "PublicIP": {
+      "Description": "Public IP address of the newly created EC2 instance",
+      "Value": {
+        "Fn::GetAtt": [
+          "EC2Instance",
+          "PublicIp"
+        ]
+      }
+    }
+  }
+}
